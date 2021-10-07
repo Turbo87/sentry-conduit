@@ -1,6 +1,6 @@
 use conduit::{Handler, Host, RequestExt, Scheme};
 use conduit_middleware::{AfterResult, AroundMiddleware};
-use sentry_core::protocol::{Event, Request};
+use sentry_core::protocol::{ClientSdkPackage, Event, Request};
 use std::borrow::Cow;
 
 pub struct SentryMiddleware {
@@ -73,8 +73,20 @@ fn sentry_request_from_http(request: &dyn RequestExt) -> Request {
 
 /// Add request data to a Sentry event
 fn process_event(mut event: Event<'static>, request: &Request) -> Event<'static> {
+    // Request
     if event.request.is_none() {
         event.request = Some(request.clone());
     }
+
+    // SDK
+    if let Some(sdk) = event.sdk.take() {
+        let mut sdk = sdk.into_owned();
+        sdk.packages.push(ClientSdkPackage {
+            name: "sentry-conduit".into(),
+            version: env!("CARGO_PKG_VERSION").into(),
+        });
+        event.sdk = Some(Cow::Owned(sdk));
+    }
+
     event
 }
