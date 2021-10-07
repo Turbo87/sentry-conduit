@@ -7,6 +7,20 @@ sentry-conduit
 [conduit]: https://github.com/conduit-rust/conduit
 
 
+Features
+------------------------------------------------------------------------------
+
+- Automatic per-request [scoping](https://develop.sentry.dev/sdk/unified-api/#scope)
+  of errors, breadcrumbs and other data
+- Error capturing for handler results
+- Includes HTTP request metadata in all reports
+- Optional release health tracking
+- Reporting of error stack traces, if available
+- Limited `transaction` field support (aka. the route pattern that was used by [conduit-router])
+
+[conduit-router]: https://github.com/conduit-rust/conduit/tree/master/conduit-router
+
+
 Usage
 ------------------------------------------------------------------------------
 
