@@ -1,6 +1,6 @@
 use conduit::{Handler, Host, RequestExt, Scheme};
 use conduit_middleware::{AfterResult, AroundMiddleware};
-use sentry_core::protocol::{ClientSdkPackage, Event, Request};
+use sentry_core::protocol::{ClientSdkPackage, Event, Request, SessionStatus};
 use std::borrow::Cow;
 
 pub struct SentryMiddleware {
@@ -24,12 +24,25 @@ impl Handler for SentryMiddleware {
         sentry_core::with_scope(
             |_scope| {},
             || {
-                let with_pii = sentry_core::Hub::with_active(|hub| {
+                let (with_pii, track_sessions) = sentry_core::Hub::with_active(|hub| {
                     let client = hub.client();
-                    client
+
+                    let with_pii = client
                         .as_ref()
-                        .map_or(false, |client| client.options().send_default_pii)
+                        .map_or(false, |client| client.options().send_default_pii);
+
+                    let track_sessions = client.as_ref().map_or(false, |client| {
+                        let options = client.options();
+                        options.auto_session_tracking
+                            && options.session_mode == sentry_core::SessionMode::Request
+                    });
+
+                    (with_pii, track_sessions)
                 });
+
+                if track_sessions {
+                    sentry_core::start_session();
+                }
 
                 let sentry_req = sentry_request_from_http(req, with_pii);
                 sentry_core::configure_scope(|scope| {
@@ -42,6 +55,15 @@ impl Handler for SentryMiddleware {
                 if let Err(error) = &result {
                     sentry_core::capture_error(error.as_ref());
                 }
+
+                if track_sessions {
+                    let status = match &result {
+                        Ok(_) => SessionStatus::Exited,
+                        Err(_) => SessionStatus::Abnormal,
+                    };
+                    sentry_core::end_session_with_status(status);
+                }
+
                 result
             },
         )
