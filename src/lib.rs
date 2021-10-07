@@ -19,6 +19,15 @@ impl AroundMiddleware for SentryMiddleware {
 
 impl Handler for SentryMiddleware {
     fn call(&self, req: &mut dyn RequestExt) -> AfterResult {
-        sentry_core::with_scope(|_scope| {}, || self.handler.as_ref().unwrap().call(req))
+        sentry_core::with_scope(
+            |_scope| {},
+            || {
+                let result = self.handler.as_ref().unwrap().call(req);
+                if let Err(error) = &result {
+                    sentry_core::capture_error(error.as_ref());
+                }
+                result
+            },
+        )
     }
 }
