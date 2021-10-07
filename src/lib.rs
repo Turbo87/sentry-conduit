@@ -64,9 +64,17 @@ fn sentry_request_from_http(request: &dyn RequestExt) -> Request {
         url += query_string;
     }
 
+    let headers = request
+        .headers()
+        .iter()
+        .filter(|(_name, value)| !value.is_sensitive())
+        .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or_default().to_string()))
+        .collect();
+
     Request {
         url: url.parse().ok(),
         method,
+        headers,
         ..Default::default()
     }
 }
