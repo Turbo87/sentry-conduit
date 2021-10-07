@@ -1,5 +1,5 @@
-use conduit::{Handler, Host, RequestExt, Scheme};
-use conduit_middleware::{AfterResult, AroundMiddleware};
+use conduit::{Handler, HandlerResult, Host, RequestExt, Scheme};
+use conduit_middleware::AroundMiddleware;
 use sentry_core::protocol::{ClientSdkPackage, Event, Request, SessionStatus};
 use std::borrow::Cow;
 
@@ -23,7 +23,7 @@ impl AroundMiddleware for SentryMiddleware {
 }
 
 impl Handler for SentryMiddleware {
-    fn call(&self, req: &mut dyn RequestExt) -> AfterResult {
+    fn call(&self, req: &mut dyn RequestExt) -> HandlerResult {
         sentry_core::with_scope(
             |_scope| {},
             || {
