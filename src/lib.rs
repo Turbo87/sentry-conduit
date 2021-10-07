@@ -24,7 +24,14 @@ impl Handler for SentryMiddleware {
         sentry_core::with_scope(
             |_scope| {},
             || {
-                let sentry_req = sentry_request_from_http(req);
+                let with_pii = sentry_core::Hub::with_active(|hub| {
+                    let client = hub.client();
+                    client
+                        .as_ref()
+                        .map_or(false, |client| client.options().send_default_pii)
+                });
+
+                let sentry_req = sentry_request_from_http(req, with_pii);
                 sentry_core::configure_scope(|scope| {
                     scope.add_event_processor(Box::new(move |event| {
                         Some(process_event(event, &sentry_req))
@@ -42,7 +49,7 @@ impl Handler for SentryMiddleware {
 }
 
 /// Build a Sentry request struct from the HTTP request
-fn sentry_request_from_http(request: &dyn RequestExt) -> Request {
+fn sentry_request_from_http(request: &dyn RequestExt, with_pii: bool) -> Request {
     let method = Some(request.method().to_string());
 
     let scheme = match request.scheme() {
@@ -71,12 +78,20 @@ fn sentry_request_from_http(request: &dyn RequestExt) -> Request {
         .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or_default().to_string()))
         .collect();
 
-    Request {
+    let mut sentry_req = Request {
         url: url.parse().ok(),
         method,
         headers,
         ..Default::default()
-    }
+    };
+
+    // If PII is enabled, include the remote address
+    if with_pii {
+        let remote_addr = request.remote_addr().to_string();
+        sentry_req.env.insert("REMOTE_ADDR".into(), remote_addr);
+    };
+
+    sentry_req
 }
 
 /// Add request data to a Sentry event
