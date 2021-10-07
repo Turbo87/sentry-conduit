@@ -3,6 +3,9 @@ use conduit_middleware::{AfterResult, AroundMiddleware};
 use sentry_core::protocol::{ClientSdkPackage, Event, Request, SessionStatus};
 use std::borrow::Cow;
 
+#[cfg(feature = "router")]
+use conduit_router::RoutePattern;
+
 pub struct SentryMiddleware {
     handler: Option<Box<dyn Handler>>,
 }
@@ -52,6 +55,21 @@ impl Handler for SentryMiddleware {
                 });
 
                 let result = self.handler.as_ref().unwrap().call(req);
+
+                // unfortunately, `RoutePattern` is only available *after* the call above
+                // so we can't add the `transaction` field to any captures that happen
+                // inside of the handlers.
+                sentry_core::configure_scope(|scope| {
+                    let transaction = if cfg!(feature = "router") {
+                        let pattern = req.extensions().find::<RoutePattern>();
+                        pattern.map(|pattern| pattern.pattern())
+                    } else {
+                        None
+                    };
+
+                    scope.set_transaction(transaction);
+                });
+
                 if let Err(error) = &result {
                     sentry_core::capture_error(error.as_ref());
                 }
