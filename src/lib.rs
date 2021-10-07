@@ -10,6 +10,12 @@ pub struct SentryMiddleware {
     handler: Option<Box<dyn Handler>>,
 }
 
+impl Default for SentryMiddleware {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SentryMiddleware {
     pub fn new() -> SentryMiddleware {
         SentryMiddleware { handler: None }

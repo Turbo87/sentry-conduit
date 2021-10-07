@@ -37,7 +37,7 @@ fn build_conduit_handler() -> impl Handler {
     router.get("/panic", panic);
 
     let mut builder = MiddlewareBuilder::new(router);
-    builder.around(SentryMiddleware::new());
+    builder.around(SentryMiddleware::default());
     builder
 }
 
