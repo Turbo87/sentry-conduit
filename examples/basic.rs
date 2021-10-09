@@ -5,11 +5,11 @@ use conduit_router::RouteBuilder;
 use sentry::Level;
 use sentry_conduit::SentryMiddleware;
 use std::io;
+use tracing::info;
+use tracing_subscriber::{filter, prelude::*};
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
-
     let _guard = sentry::init((
         std::env::var("SENTRY_DSN").unwrap(),
         sentry::ClientOptions {
@@ -19,7 +19,20 @@ async fn main() {
             ..Default::default()
         },
     ));
+
     std::env::set_var("RUST_BACKTRACE", "1");
+
+    let log_filter = std::env::var("RUST_LOG")
+        .unwrap_or_default()
+        .parse::<filter::Targets>()
+        .expect("Invalid RUST_LOG value");
+
+    let sentry_filter = filter::Targets::new().with_default(tracing::Level::INFO);
+
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().with_filter(log_filter))
+        .with(sentry::integrations::tracing::layer().with_filter(sentry_filter))
+        .init();
 
     let addr = "127.0.0.1:3001";
     println!("Starting server on http://{}", addr);
@@ -79,6 +92,10 @@ fn captures_message(_req: &mut dyn RequestExt) -> ResponseResult<io::Error> {
         message: Some("message breadcrumb".into()),
         ..Default::default()
     });
+
+    let some_number = 42;
+    info!(some_number, "tracing breadcrumb");
+
     sentry::capture_message("Something is not well", Level::Warning);
     basic_response("Hello World")
 }
