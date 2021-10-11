@@ -21,6 +21,12 @@ Features
 [conduit-router]: https://github.com/conduit-rust/conduit/tree/master/conduit-router
 
 
+MSRV
+------------------------------------------------------------------------------
+
+The "Minimum Supported Rust Version" of this project is: v1.46.0
+
+
 Usage
 ------------------------------------------------------------------------------
 
