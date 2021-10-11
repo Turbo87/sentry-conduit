@@ -17,7 +17,7 @@ router = ["conduit-router"]
 [dependencies]
 conduit = "0.9.0-alpha.5"
 conduit-middleware = "0.9.0-alpha.4"
-conduit-router = { version = "0.9.0-alpha.6", optional = true }
+conduit-router = { version = "0.9.0-alpha.7", optional = true }
 sentry-core = { version = "0.23.0", default-features = false }
 
 [dev-dependencies]

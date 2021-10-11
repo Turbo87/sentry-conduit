@@ -143,12 +143,13 @@ dependencies = [
 
 [[package]]
 name = "conduit-router"
-version = "0.9.0-alpha.6"
+version = "0.9.0-alpha.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c17affd4f27912a18866139ff22cfb011b5c7e9fd7546e5bfef29fb7cba60173"
+checksum = "f7dbfd959e6ead26d8e27e28810adb1f2a2ce9ada7f4bd030480f2d51a18d044"
 dependencies = [
  "conduit",
  "route-recognizer",
+ "tracing",
 ]
 
 [[package]]
