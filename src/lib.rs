@@ -1,96 +1,111 @@
-use conduit::{Handler, HandlerResult, Host, RequestExt, Scheme};
-use conduit_middleware::AroundMiddleware;
+use conduit::{Host, RequestExt, Scheme};
+use conduit_middleware::{AfterResult, BeforeResult, Middleware};
 use sentry_core::protocol::{ClientSdkPackage, Event, Request, SessionStatus};
+use sentry_core::{Hub, ScopeGuard};
 use std::borrow::Cow;
 
 pub struct SentryMiddleware {
-    handler: Option<Box<dyn Handler>>,
+    track_sessions: bool,
+    with_pii: bool,
 }
 
 impl Default for SentryMiddleware {
     fn default() -> Self {
-        Self::new()
+        // Read `send_default_pii` and `auto_session_tracking` options from
+        // Sentry configuration by default
+        let (with_pii, track_sessions) = Hub::with_active(|hub| {
+            let client = hub.client();
+
+            let with_pii = client
+                .as_ref()
+                .map_or(false, |client| client.options().send_default_pii);
+
+            let track_sessions = client.as_ref().map_or(false, |client| {
+                let options = client.options();
+                options.auto_session_tracking
+                    && options.session_mode == sentry_core::SessionMode::Request
+            });
+
+            (with_pii, track_sessions)
+        });
+
+        SentryMiddleware {
+            track_sessions,
+            with_pii,
+        }
     }
 }
 
 impl SentryMiddleware {
     pub fn new() -> SentryMiddleware {
-        SentryMiddleware { handler: None }
+        Default::default()
     }
 }
 
-impl AroundMiddleware for SentryMiddleware {
-    fn with_handler(&mut self, handler: Box<dyn Handler>) {
-        self.handler = Some(handler)
+impl Middleware for SentryMiddleware {
+    fn before(&self, req: &mut dyn RequestExt) -> BeforeResult {
+        // Push a `Scope` to the stack so that all further `configure_scope()`
+        // calls are scoped to this specific request.
+        let scope = Hub::with_active(|hub| hub.push_scope());
+
+        // Start a `Session`, if session tracking is enabled
+        if self.track_sessions {
+            sentry_core::start_session();
+        }
+
+        // Extract HTTP request information from `req`
+        let sentry_req = sentry_request_from_http(req, self.with_pii);
+        // ... and configure Sentry to use it
+        sentry_core::configure_scope(|scope| {
+            scope.add_event_processor(Box::new(move |event| {
+                Some(process_event(event, &sentry_req))
+            }));
+        });
+
+        // Save the `ScopeGuard` in the request to ensure that it's not dropped yet
+        req.mut_extensions().insert(scope);
+
+        Ok(())
     }
-}
 
-impl Handler for SentryMiddleware {
-    fn call(&self, req: &mut dyn RequestExt) -> HandlerResult {
-        sentry_core::with_scope(
-            |_scope| {},
-            || {
-                let (with_pii, track_sessions) = sentry_core::Hub::with_active(|hub| {
-                    let client = hub.client();
-
-                    let with_pii = client
-                        .as_ref()
-                        .map_or(false, |client| client.options().send_default_pii);
-
-                    let track_sessions = client.as_ref().map_or(false, |client| {
-                        let options = client.options();
-                        options.auto_session_tracking
-                            && options.session_mode == sentry_core::SessionMode::Request
-                    });
-
-                    (with_pii, track_sessions)
-                });
-
-                if track_sessions {
-                    sentry_core::start_session();
-                }
-
-                let sentry_req = sentry_request_from_http(req, with_pii);
+    fn after(&self, req: &mut dyn RequestExt, result: AfterResult) -> AfterResult {
+        if let Some(scope) = req.mut_extensions().pop::<ScopeGuard>() {
+            #[cfg(feature = "router")]
+            {
                 sentry_core::configure_scope(|scope| {
-                    scope.add_event_processor(Box::new(move |event| {
-                        Some(process_event(event, &sentry_req))
-                    }))
-                });
-
-                let result = self.handler.as_ref().unwrap().call(req);
-
-                #[cfg(feature = "router")]
-                {
-                    // unfortunately, `RoutePattern` is only available *after* the call above
+                    // unfortunately, `RoutePattern` is only available in the `after` handler
                     // so we can't add the `transaction` field to any captures that happen
-                    // inside of the handlers.
-                    sentry_core::configure_scope(|scope| {
-                        use conduit_router::RoutePattern;
+                    // before this is called.
+                    use conduit_router::RoutePattern;
 
-                        let transaction = req
-                            .extensions()
-                            .find::<RoutePattern>()
-                            .map(|pattern| pattern.pattern());
+                    let transaction = req
+                        .extensions()
+                        .find::<RoutePattern>()
+                        .map(|pattern| pattern.pattern());
 
-                        scope.set_transaction(transaction);
-                    });
-                }
+                    scope.set_transaction(transaction);
+                });
+            }
 
-                if let Err(error) = &result {
-                    sentry_core::capture_error(error.as_ref());
-                }
+            // Capture `Err` results as errors
+            if let Err(error) = &result {
+                sentry_core::capture_error(error.as_ref());
+            }
 
-                if track_sessions {
-                    let status = match &result {
-                        Ok(_) => SessionStatus::Exited,
-                        Err(_) => SessionStatus::Abnormal,
-                    };
-                    sentry_core::end_session_with_status(status);
-                }
+            // End the `Session`, if session tracking is enabled
+            if self.track_sessions {
+                let status = match &result {
+                    Ok(_) => SessionStatus::Exited,
+                    Err(_) => SessionStatus::Abnormal,
+                };
+                sentry_core::end_session_with_status(status);
+            }
 
-                result
-            },
-        )
+            // Explicitly drop the `Scope` (technically unnecessary)
+            drop(scope);
+        }
+
+        result
     }
 }
 
