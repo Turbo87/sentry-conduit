@@ -1,12 +1,43 @@
-use conduit::{header, Body, Handler, RequestExt, Response, ResponseResult};
+use conduit::{box_error, header, Body, Handler, RequestExt, Response, ResponseResult};
 use conduit_hyper::Server;
-use conduit_middleware::MiddlewareBuilder;
+use conduit_middleware::{AfterResult, BeforeResult, Middleware, MiddlewareBuilder};
 use conduit_router::RouteBuilder;
 use sentry::Level;
 use sentry_conduit::SentryMiddleware;
 use std::io;
 use tracing::info;
 use tracing_subscriber::{filter, prelude::*};
+
+struct CustomMiddleware;
+
+impl Middleware for CustomMiddleware {
+    fn before(&self, req: &mut dyn RequestExt) -> BeforeResult {
+        // Set `before` extra to the request path to check correct scoping
+        sentry::configure_scope(|scope| scope.set_extra("before", req.path().into()));
+
+        // Add middleware breadcrumb to check correct scoping
+        sentry::add_breadcrumb(sentry::Breadcrumb {
+            message: Some("middleware breadcrumb".into()),
+            ..Default::default()
+        });
+
+        // Return an `Err` for the `/middleware-error` route to test in-middleware error handling
+        if req.path() == "/middleware-error" {
+            return Err(box_error(io::Error::new(
+                io::ErrorKind::Other,
+                "An error happened in the middleware",
+            )));
+        }
+
+        Ok(())
+    }
+
+    fn after(&self, req: &mut dyn RequestExt, res: AfterResult) -> AfterResult {
+        // Set `after` extra to the request path to check correct scoping
+        sentry::configure_scope(|scope| scope.set_extra("after", req.path().into()));
+        res
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -48,9 +79,11 @@ fn build_conduit_handler() -> impl Handler {
     router.get("/err", errors);
     router.get("/msg", captures_message);
     router.get("/panic", panic);
+    router.get("/middleware-error", healthy);
 
     let mut builder = MiddlewareBuilder::new(router);
-    builder.around(SentryMiddleware::default());
+    builder.add(SentryMiddleware::default());
+    builder.add(CustomMiddleware);
     builder
 }
 
