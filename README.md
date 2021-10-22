@@ -39,7 +39,7 @@ fn build_app() -> impl Hander {
     router.get("/panic", panic);
 
     let mut builder = MiddlewareBuilder::new(router);
-    builder.around(SentryMiddleware::default());
+    builder.add(SentryMiddleware::default());
     builder
 }
 ```
