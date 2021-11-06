@@ -69,7 +69,7 @@ impl Middleware for SentryMiddleware {
     }
 
     fn after(&self, req: &mut dyn RequestExt, result: AfterResult) -> AfterResult {
-        if let Some(scope) = req.mut_extensions().pop::<ScopeGuard>() {
+        if let Some(scope) = req.mut_extensions().remove::<ScopeGuard>() {
             #[cfg(feature = "router")]
             {
                 sentry_core::configure_scope(|scope| {
@@ -80,7 +80,7 @@ impl Middleware for SentryMiddleware {
 
                     let transaction = req
                         .extensions()
-                        .find::<RoutePattern>()
+                        .get::<RoutePattern>()
                         .map(|pattern| pattern.pattern());
 
                     scope.set_transaction(transaction);
