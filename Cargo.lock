@@ -108,24 +108,25 @@ dependencies = [
 
 [[package]]
 name = "conduit"
-version = "0.9.0-alpha.5"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ce8954d399f2fcb0900b06973b4624538b8d8e46d38c12be237dd3cc8e95cfc"
+checksum = "f1267b8037a4f4a80783e7bcf912af06fc9b5f703a0d8e3a5ae54fbcbc2ae6ab"
 dependencies = [
  "http",
 ]
 
 [[package]]
 name = "conduit-hyper"
-version = "0.3.0-alpha.7"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b607a5f4d4ede64ce36dd062eb22ce8998476e272f4f7f8d4e87c1bb34e7ebc"
+checksum = "8d153bee46b1950c92754cbde9bb8fb616eafd130a00e4bd96f3ee815e3f3147"
 dependencies = [
  "bytes",
  "conduit",
  "http",
  "hyper",
  "percent-encoding",
+ "thiserror",
  "tokio",
  "tokio-stream",
  "tower-service",
@@ -1205,7 +1206,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "375a639232caf30edfc78e8d89b2d4c375515393e7af7e16f01cd96917fb2105"
 dependencies = [
  "cfg-if",
- "log",
  "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
