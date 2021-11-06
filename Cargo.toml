@@ -1,6 +1,6 @@
 [package]
 name = "sentry-conduit"
-version = "0.3.0"
+version = "0.4.0"
 description = "Sentry middleware for conduit"
 authors = ["Tobias Bieniek <tobias.bieniek@gmail.com>"]
 license = "MIT/Apache-2.0"
