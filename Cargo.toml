@@ -22,7 +22,7 @@ conduit-router = { version = "0.10.0", optional = true }
 sentry-core = { version = "0.23.0", default-features = false }
 
 [dev-dependencies]
-conduit-hyper = "0.4.0"
+conduit-hyper = "0.4.1"
 hyper = { version = "0.14", features = ["server", "http1", "stream", "tcp"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.29"
