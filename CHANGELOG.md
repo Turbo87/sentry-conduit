@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.0 (2022-01-21)
+
+#### :boom: Breaking Change
+* [#39](https://github.com/Turbo87/sentry-conduit/pull/39) Increase minimum Rust version to v1.53.0 ([@Turbo87](https://github.com/Turbo87))
+* [#38](https://github.com/Turbo87/sentry-conduit/pull/38) Update sentry to 0.24.1
+* [#15](https://github.com/Turbo87/sentry-conduit/pull/15) Update tracing-subscriber to 0.3.6
+
+
 ## v0.4.0 (2021-11-06)
 
 #### :boom: Breaking Change
