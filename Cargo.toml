@@ -19,12 +19,12 @@ router = ["conduit-router"]
 conduit = "0.10.0"
 conduit-middleware = "0.10.0"
 conduit-router = { version = "0.10.0", optional = true }
-sentry-core = { version = "0.23.0", default-features = false }
+sentry-core = { version = "0.24.1", default-features = false }
 
 [dev-dependencies]
 conduit-hyper = "0.4.1"
 hyper = { version = "0.14", features = ["server", "http1", "stream", "tcp"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.29"
-tracing-subscriber = "0.2.25"
-sentry = { version = "0.23.0", features = ["debug-logs", "tracing", "test"] }
+tracing-subscriber = "0.3.6"
+sentry = { version = "0.24.1", features = ["debug-logs", "tracing", "test"] }
