@@ -12,5 +12,13 @@
       "github>Turbo87/renovate-config//automergeCaretConstraint",
       "github>Turbo87/renovate-config//commitTopics",
       "github>Turbo87/renovate-config//rust/groupConduit"
-  ]
+  ],
+
+  "packageRules": [{
+    "matchPackagePatterns": [
+      "^sentry$",
+      "^sentry-"
+    ],
+    "groupName": "sentry crates"
+  }]
 }
