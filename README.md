@@ -24,7 +24,7 @@ Features
 MSRV
 ------------------------------------------------------------------------------
 
-The "Minimum Supported Rust Version" of this project is: v1.46.0
+The "Minimum Supported Rust Version" of this project is: v1.53.0
 
 
 Usage
