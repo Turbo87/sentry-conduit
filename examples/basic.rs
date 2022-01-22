@@ -76,6 +76,7 @@ async fn main() {
 fn build_conduit_handler() -> impl Handler {
     let mut router = RouteBuilder::new();
     router.get("/", healthy);
+    router.get("/favicon.ico", four_oh_four);
     router.get("/err", errors);
     router.get("/msg", captures_message);
     router.get("/panic", panic);
@@ -106,6 +107,13 @@ fn healthy(_req: &mut dyn RequestExt) -> ResponseResult<io::Error> {
     });
 
     basic_response("All good")
+}
+
+fn four_oh_four(_req: &mut dyn RequestExt) -> ResponseResult<io::Error> {
+    Ok(Response::builder()
+        .status(404)
+        .body(Body::from_static(b""))
+        .unwrap())
 }
 
 fn errors(_req: &mut dyn RequestExt) -> ResponseResult<io::Error> {
