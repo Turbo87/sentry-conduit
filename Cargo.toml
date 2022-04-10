@@ -26,5 +26,5 @@ conduit-hyper = "0.4.1"
 hyper = { version = "0.14", features = ["server", "http1", "stream", "tcp"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.33"
-tracing-subscriber = "0.3.10"
+tracing-subscriber = "0.3.11"
 sentry = { version = "0.25.0", features = ["debug-logs", "tracing", "test"] }
