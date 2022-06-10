@@ -1,10 +1,11 @@
-use conduit::{Host, RequestExt, Scheme};
+use conduit::{Host, RequestExt, Scheme, StatusCode};
 use conduit_middleware::{AfterResult, BeforeResult, Middleware};
-use sentry_core::protocol::{ClientSdkPackage, Event, Request, SessionStatus};
-use sentry_core::{Hub, ScopeGuard};
+use sentry_core::protocol::{ClientSdkPackage, Event, Request, SessionStatus, SpanStatus};
+use sentry_core::{Hub, ScopeGuard, TransactionOrSpan};
 use std::borrow::Cow;
 
 pub struct SentryMiddleware {
+    start_transactions: bool,
     track_sessions: bool,
     with_pii: bool,
 }
@@ -30,6 +31,7 @@ impl Default for SentryMiddleware {
         });
 
         SentryMiddleware {
+            start_transactions: false,
             track_sessions,
             with_pii,
         }
@@ -39,6 +41,13 @@ impl Default for SentryMiddleware {
 impl SentryMiddleware {
     pub fn new() -> SentryMiddleware {
         Default::default()
+    }
+
+    pub fn with_transactions() -> SentryMiddleware {
+        SentryMiddleware {
+            start_transactions: true,
+            ..SentryMiddleware::default()
+        }
     }
 }
 
@@ -55,7 +64,34 @@ impl Middleware for SentryMiddleware {
 
         // Extract HTTP request information from `req`
         let sentry_req = sentry_request_from_http(req, self.with_pii);
-        // ... and configure Sentry to use it
+
+        if self.start_transactions {
+            // Request path will be taken as the default transaction name
+            let name = req.path();
+
+            // Create a HTTP headers iterator that Sentry can ingest
+            let headers = req.headers().iter().flat_map(|(header, value)| {
+                value.to_str().ok().map(|value| (header.as_str(), value))
+            });
+
+            // Create a new transaction context
+            let ctx = sentry_core::TransactionContext::continue_from_headers(
+                name,
+                "http.server",
+                headers,
+            );
+
+            // ... and turn it into a `Transaction`
+            let transaction = sentry_core::start_transaction(ctx);
+
+            // Attach HTTP request data to the transaction
+            transaction.set_request(sentry_req.clone());
+
+            // Configure Sentry to use the `Transaction` for this request
+            sentry_core::configure_scope(|scope| scope.set_span(Some(transaction.into())));
+        }
+
+        // .Configure Sentry to use the HTTP request data for issue reports
         sentry_core::configure_scope(|scope| {
             scope.add_event_processor(Box::new(move |event| {
                 Some(process_event(event, &sentry_req))
@@ -85,6 +121,24 @@ impl Middleware for SentryMiddleware {
 
                     scope.set_transaction(transaction);
                 });
+            }
+
+            // If a `Transaction` was started for this request ...
+            if let Some(TransactionOrSpan::Transaction(transaction)) =
+                sentry_core::configure_scope(|scope| scope.get_span())
+            {
+                // Set the HTTP response status code on the transaction
+                // if it has not been set yet.
+                if transaction.get_status().is_none() {
+                    let status = result
+                        .as_ref()
+                        .map(|res| map_status(res.status()))
+                        .unwrap_or(SpanStatus::UnknownError);
+                    transaction.set_status(status);
+                }
+
+                // Finish the `Transaction` (aka. send it to Sentry)
+                transaction.finish();
             }
 
             // Capture `Err` results as errors
@@ -153,6 +207,23 @@ fn sentry_request_from_http(request: &dyn RequestExt, with_pii: bool) -> Request
     };
 
     sentry_req
+}
+
+/// Turn `http::StatusCode` into a type that Sentry understands.
+fn map_status(status: StatusCode) -> SpanStatus {
+    match status {
+        StatusCode::UNAUTHORIZED => SpanStatus::Unauthenticated,
+        StatusCode::FORBIDDEN => SpanStatus::PermissionDenied,
+        StatusCode::NOT_FOUND => SpanStatus::NotFound,
+        StatusCode::TOO_MANY_REQUESTS => SpanStatus::ResourceExhausted,
+        status if status.is_client_error() => SpanStatus::InvalidArgument,
+        StatusCode::NOT_IMPLEMENTED => SpanStatus::Unimplemented,
+        StatusCode::SERVICE_UNAVAILABLE => SpanStatus::Unavailable,
+        status if status.is_server_error() => SpanStatus::InternalError,
+        StatusCode::CONFLICT => SpanStatus::AlreadyExists,
+        status if status.is_success() => SpanStatus::Ok,
+        _ => SpanStatus::UnknownError,
+    }
 }
 
 /// Add request data to a Sentry event
