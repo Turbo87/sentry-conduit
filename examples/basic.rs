@@ -80,6 +80,7 @@ fn build_conduit_handler() -> impl Handler {
     router.get("/err", errors);
     router.get("/msg", captures_message);
     router.get("/panic", panic);
+    router.get("/pattern/:num", healthy);
     router.get("/middleware-error", healthy);
 
     let mut builder = MiddlewareBuilder::new(router);
