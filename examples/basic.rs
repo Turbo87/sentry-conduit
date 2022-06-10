@@ -47,6 +47,7 @@ async fn main() {
             auto_session_tracking: true,
             release: sentry::release_name!(),
             session_mode: sentry::SessionMode::Request,
+            traces_sample_rate: 1.0,
             ..Default::default()
         },
     ));
@@ -84,7 +85,7 @@ fn build_conduit_handler() -> impl Handler {
     router.get("/middleware-error", healthy);
 
     let mut builder = MiddlewareBuilder::new(router);
-    builder.add(SentryMiddleware::default());
+    builder.add(SentryMiddleware::with_transactions());
     builder.add(CustomMiddleware);
     builder
 }
