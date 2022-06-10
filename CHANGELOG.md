@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.6.0 (2022-06-10)
+
+#### :boom: Breaking Change
+* [#70](https://github.com/Turbo87/sentry-conduit/pull/70) Update sentry crates to 0.26.0 (minor) ([@renovate[bot]](https://github.com/apps/renovate))
+* [#54](https://github.com/Turbo87/sentry-conduit/pull/54) Update sentry crates to 0.25.0 (minor) ([@renovate[bot]](https://github.com/apps/renovate))
+
+#### :rocket: Enhancement
+* [#76](https://github.com/Turbo87/sentry-conduit/pull/76) Implement performance tracing support ([@Turbo87](https://github.com/Turbo87))
+
+#### :house: Internal
+* [#75](https://github.com/Turbo87/sentry-conduit/pull/75) examples: Add two more routes ([@Turbo87](https://github.com/Turbo87))
+
+
 ## v0.5.0 (2022-01-21)
 
 #### :boom: Breaking Change
