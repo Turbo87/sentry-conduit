@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.7.0 (2022-06-22)
+
+#### :boom: Breaking Change
+* [#78](https://github.com/Turbo87/sentry-conduit/pull/78) Update sentry crates to 0.27.0 (minor) ([@renovate[bot]](https://github.com/apps/renovate))
+* [#80](https://github.com/Turbo87/sentry-conduit/pull/80) Update minimum Rust version to v1.57.0 ([@Turbo87](https://github.com/Turbo87))
+
+#### :rocket: Enhancement
+* [#79](https://github.com/Turbo87/sentry-conduit/pull/79) Improve HTTP status code mapping ([@Turbo87](https://github.com/Turbo87))
+
+
 ## v0.6.0 (2022-06-10)
 
 #### :boom: Breaking Change
