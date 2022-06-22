@@ -216,12 +216,14 @@ fn map_status(status: StatusCode) -> SpanStatus {
         StatusCode::FORBIDDEN => SpanStatus::PermissionDenied,
         StatusCode::NOT_FOUND => SpanStatus::NotFound,
         StatusCode::TOO_MANY_REQUESTS => SpanStatus::ResourceExhausted,
-        status if status.is_client_error() => SpanStatus::InvalidArgument,
+        StatusCode::CONFLICT => SpanStatus::AlreadyExists,
         StatusCode::NOT_IMPLEMENTED => SpanStatus::Unimplemented,
         StatusCode::SERVICE_UNAVAILABLE => SpanStatus::Unavailable,
-        status if status.is_server_error() => SpanStatus::InternalError,
-        StatusCode::CONFLICT => SpanStatus::AlreadyExists,
+        status if status.is_informational() => SpanStatus::Ok,
         status if status.is_success() => SpanStatus::Ok,
+        status if status.is_redirection() => SpanStatus::Ok,
+        status if status.is_client_error() => SpanStatus::InvalidArgument,
+        status if status.is_server_error() => SpanStatus::InternalError,
         _ => SpanStatus::UnknownError,
     }
 }
