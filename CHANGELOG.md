@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.28.0 (2022-11-05)
+
+#### :boom: Breaking Change
+* [#100](https://github.com/Turbo87/sentry-conduit/pull/100) Update sentry crates to 0.28.0 (minor) ([@renovate[bot]](https://github.com/apps/renovate))
+* [#101](https://github.com/Turbo87/sentry-conduit/pull/101) Bump "Minimum Supported Rust Version" to v1.60.0 ([@Turbo87](https://github.com/Turbo87))
+
+
 ## v0.7.0 (2022-06-22)
 
 #### :boom: Breaking Change
