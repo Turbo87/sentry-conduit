@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.29.0 (2022-11-17)
+
+#### :boom: Breaking Change
+* [#103](https://github.com/Turbo87/sentry-conduit/pull/103) Update sentry crates to 0.29.0 (minor) ([@renovate[bot]](https://github.com/apps/renovate))
+
+
 ## v0.28.0 (2022-11-05)
 
 #### :boom: Breaking Change
